@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Kuis Interaktif - 10 Soal</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .progress-text {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+        .question-container {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #444;
+        }
+        .option-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .option {
+            background-color: #e9ecef;
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        .option:hover {
+            background-color: #d1ecf1;
+        }
+        .option.correct {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .option.incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        #submit-btn {
+            display: none;
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        #submit-btn:hover {
+            background-color: #0056b3;
+        }
+        #result-container {
+            display: none;
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+        .score {
+            color: #28a745;
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Kuis Pengetahuan</h1>
+        <div id="progress" class="progress-text">Soal 1 dari 10</div>
+        
+        <div id="quiz-container">
+            <div id="question" class="question-container"></div>
+            <div id="options-container" class="option-container"></div>
+            <button id="submit-btn" onclick="nextQuestion()">Selanjutnya</button>
+        </div>
+
+        <div id="result-container">
+            <p>Kuis Selesai!</p>
+            <p>Skor Akhir Anda: <span id="score" class="score">0</span> / <span id="total-questions"></span></p>
+            <button onclick="resetQuiz()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px;">Ulangi Kuis</button>
+        </div>
+    </div>
+
+    <script>
+        // Array Soal - Anda bisa menambah atau mengganti soal di bawah ini dengan mudah
+        const quizData = [
+            {
+                question: "Apa nama planet terdekat dari Matahari?",
+                options: ["Venus", "Mars", "Merkurius", "Bumi"],
+                correct: "Merkurius"
+            },
+            {
+                question: "Berapa hasil dari 12 x 5?",
+                options: ["50", "55", "60", "65"],
+                correct: "60"
+            },
+            {
+                question: "Benua terbesar di dunia adalah benua...",
+                options: ["Afrika", "Asia", "Amerika", "Eropa"],
+                correct: "Asia"
+            },
+            {
+                question: "Hewan mamalia darat terbesar di dunia adalah...",
+                options: ["Gajah", "Jerapah", "Badak", "Kudanil"],
+                correct: "Gajah"
+            },
+            {
+                question: "Laut yang memisahkan Pulau Jawa dan Pulau Sumatra bernama...",
+                options: ["Selat Sunda", "Selat Bali", "Selat Madura", "Selat Makassar"],
+                correct: "Selat Sunda"
+            },
+            {
+                question: "Gas apa yang paling banyak di hirup manusia untuk bernapas?",
+                options: ["Karbondioksida", "Oksigen", "Nitrogen", "Hidrogen"],
+                correct: "Oksigen"
+            },
+            {
+                question: "Mata uang resmi negara Jepang adalah...",
+                options: ["Won", "Yen", "Dollar", "Rupee"],
+                correct: "Yen"
+            },
+            {
+                question: "Siapa penemu lampu pijar?",
+                options: ["Albert Einstein", "Alexander Graham Bell", "Thomas Alva Edison", "Isaac Newton"],
+                correct: "Thomas Alva Edison"
+            },
+            {
+                question: "Vitamin yang paling banyak terkandung dalam buah jeruk adalah...",
+                options: ["Vitamin A", "Vitamin B", "Vitamin C", "Vitamin D"],
+                correct: "Vitamin C"
+            },
+            {
+                question: "Lagu kebangsaan Indonesia adalah...",
+                options: ["Hari Merdeka", "Indonesia Pusaka", "Indonesia Raya", "Bagimu Negeri"],
+                correct: "Indonesia Raya"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answered = false;
+
+        function loadQuestion() {
+            resetState();
+            let currentQuestion = quizData[currentQuestionIndex];
+            
+            // Update teks indikator nomor soal
+            document.getElementById('progress').innerText = `Soal ${currentQuestionIndex + 1} dari ${quizData.length}`;
+            document.getElementById('question').innerText = `${currentQuestionIndex + 1}. ${currentQuestion.question}`;
+
+            let optionsContainer = document.getElementById('options-container');
+            currentQuestion.options.forEach(option => {
+                let div = document.createElement('div');
+                div.classList.add('option');
+                div.innerText = option;
+                div.onclick = () => selectAnswer(div, option);
+                optionsContainer.appendChild(div);
+            });
+        }
+
+        function resetState() {
+            answered = false;
+            document.getElementById('submit-btn').style.display = 'none';
+            let optionsContainer = document.getElementById('options-container');
+            while (optionsContainer.firstChild) {
+                optionsContainer.removeChild(optionsContainer.firstChild);
+            }
+        }
+
+        function selectAnswer(selectedElement, selectedOption) {
+            if (answered) return;
+            answered = true;
+
+            let currentQuestion = quizData[currentQuestionIndex];
+            if (selectedOption === currentQuestion.correct) {
+                selectedElement.classList.add('correct');
+                score++;
+            } else {
+                selectedElement.classList.add('incorrect');
+                // Tampilkan jawaban yang benar otomatis
+                Array.from(document.getElementById('options-container').children).forEach(el => {
+                    if (el.innerText === currentQuestion.correct) {
+                        el.classList.add('correct');
+                    }
+                });
+            }
+
+            document.getElementById('submit-btn').style.display = 'block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('quiz-container').style.display = 'none';
+            document.getElementById('progress').style.display = 'none';
+            document.getElementById('result-container').style.display = 'block';
+            document.getElementById('score').innerText = score;
+            document.getElementById('total-questions').innerText = quizData.length;
+        }
+
+        function resetQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            document.getElementById('quiz-container').style.display = 'block';
+            document.getElementById('progress').style.display = 'block';
+            document.getElementById('result-container').style.display = 'none';
+            loadQuestion();
+        }
+
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
